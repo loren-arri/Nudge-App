@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nudge</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Nudge">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06222e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday tool, calm and on her side
+   IDEA a stack of pending slips pushed back to the top of his chat with one tap
+   PICTURE the live list of slips, each with a bar of how long it has waited, under one big send button
+   COLOUR ice ground, deep ink header band, hot pink only for the one action
+   TYPE Space Grotesk 500/700 + Inter
+   LAYOUT laptop: ink band with title and button, then list left and message panel right; phone: band, list, message as a bottom sheet */
+:root{color-scheme:light dark;--bg:light-dark(#dff1f7,#06222e);--ink:light-dark(#06222e,#e3f3f8);--band:light-dark(#06222e,#0b3546);--card:light-dark(#ffffff,#0c3242);--line:light-dark(#b4d6e2,#1f4c5d);--mute:light-dark(#3d5d69,#a3c5d2);--pink:#ff2e7e;--pinkSoft:light-dark(#ffe1ec,#4a1830);--pinkInk:light-dark(#a3003e,#ffb3cd)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip;-webkit-text-size-adjust:100%}
+h1,h2,summary,.cl,.stats b{font-family:"Space Grotesk",Inter,sans-serif}
+.wrap{max-width:1240px;margin:0 auto}
+.band{padding-block:clamp(24px,4vw,56px);padding-left:max(5vw,16px,env(safe-area-inset-left,0px));padding-right:max(5vw,16px,env(safe-area-inset-right,0px))}
+.top{background:var(--band);color:#e3f3f8;padding-top:max(clamp(24px,4vw,56px),calc(env(safe-area-inset-top,0px) + 16px))}
+.top-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px 48px;align-items:end}
+h1{font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.02em;margin:0 0 12px;text-wrap:balance;font-weight:700}
+.status{margin:0;font-size:17px;color:#bfe0ea}
+.status b{color:#fff;font-weight:600}
+.chip{display:inline-block;background:var(--pink);color:#06222e;font-weight:600;border-radius:999px;padding:2px 10px;font-size:14px;margin-left:8px;white-space:nowrap}
+button,.send{font:600 15px Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;gap:8px}
+button:hover,.send:hover{border-color:var(--ink)}
+:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pinkb{background:var(--pink);color:#06222e;border-color:var(--pink)}
+.big{width:100%;min-height:76px;border:0;border-radius:16px;background:var(--pink);color:#06222e;font:700 23px "Space Grotesk",Inter,sans-serif;gap:14px;box-shadow:0 6px 0 #b3134f;transition:transform .12s,box-shadow .12s}
+.big:hover{border:0}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #b3134f}
+.big:disabled{opacity:.5;cursor:default}
+.big .n{background:#06222e;color:#fff;border-radius:999px;min-width:38px;height:38px;display:inline-grid;place-items:center;font-size:18px;padding:0 8px}
+.hint{margin:14px 0 0;color:#bfe0ea;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:28px;border-top:1px solid #2a5566;padding-top:18px}
+.stats div{display:flex;flex-direction:column;gap:4px}
+.stats b{font-size:clamp(28px,4vw,40px);line-height:1;font-weight:700}
+.stats span{color:#bfe0ea;font-size:14px;line-height:1.3}
+.install{background:var(--pinkSoft);color:var(--ink);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px max(5vw,16px);font-size:15px}
+.install button{min-height:40px;background:transparent}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+h2{font-size:22px;margin:0 0 6px;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center;gap:12px}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+input[type=text],input[type=tel],input[type=email],textarea,select{width:100%;font:16px/1.45 Inter,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+select{min-height:46px}
+textarea{resize:vertical}
+.check{display:flex;gap:10px;align-items:center;font-weight:500}
+.check input{width:22px;height:22px;accent-color:var(--pink);flex:none}
+.small{font-size:13px;color:var(--mute);margin:8px 0 0}
+.err{color:var(--pinkInk);font-size:14px;margin:8px 0 0}
+.err:empty{display:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.sample{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:20px 0 0;font-size:14px;color:var(--mute)}
+.list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
+.card.urg{border-color:var(--pink);box-shadow:inset 4px 0 0 var(--pink)}
+.r1{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.cl{font-size:19px;font-weight:700}
+.tag{font-size:12px;font-weight:600;background:var(--pinkSoft);color:var(--pinkInk);border-radius:6px;padding:2px 8px}
+.det{margin:6px 0 12px}
+.wait{height:8px;border-radius:4px;background:color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden}
+.wait i{display:block;height:100%;background:var(--ink);border-radius:4px}
+.urg .wait i{background:var(--pink)}
+.meta{font-size:13px;color:var(--mute);margin:8px 0 0}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.acts button{font-size:14px;padding:0 12px}
+.empty{padding:28px 20px;border:1px dashed var(--line);border-radius:14px;color:var(--mute);text-align:center}
+details.panel{margin-top:16px}
+summary{cursor:pointer;font-size:20px;font-weight:700;min-height:44px;display:flex;align-items:center}
+.list2,.hist{list-style:none;margin:8px 0 0;padding:0}
+.list2 li,.hist li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.hist li span:last-child{color:var(--mute);text-align:right}
+.side{display:grid;gap:0;position:sticky;top:16px}
+#msg{min-height:250px;margin-top:10px}
+#bk{min-height:90px;font-size:13px}
+.sends{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.wide{width:100%;margin-top:8px}
+.off{opacity:.45;pointer-events:none}
+.x,.scrim{display:none}
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 12px 10px 16px;border-radius:12px;display:none;gap:12px;align-items:center;z-index:40;width:max-content;max-width:calc(100% - 32px);font-size:15px}
+#toast.on{display:flex}
+#toast button{background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 50%,transparent);min-height:40px}
+@media(max-width:899px){
+.grid,.top-grid{grid-template-columns:minmax(0,1fr)}
+.side{position:static;margin-top:8px}
+.comp{position:fixed;left:0;right:0;bottom:0;z-index:30;border-radius:20px 20px 0 0;max-height:92svh;overflow:auto;transform:translateY(105%);transition:transform .25s;box-shadow:0 -12px 40px rgba(0,0,0,.35);padding-bottom:max(18px,env(safe-area-inset-bottom))}
+body.open .comp{transform:none}
+body.open .scrim{display:block;position:fixed;inset:0;background:rgba(6,34,46,.55);z-index:29}
+.x{display:inline-flex}
+#msg{min-height:200px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top band">
+  <div class="wrap top-grid">
+    <div>
+      <h1>Open items for <span id="bossName">your boss</span></h1>
+      <p class="status" id="status"></p>
+    </div>
+    <div>
+      <button class="big" id="all" type="button">Nudge all <span class="n" id="cnt">0</span></button>
+      <p class="hint">Puts every open item into one message, worded differently each time. You just confirm the send.</p>
+    </div>
+  </div>
+  <div class="wrap stats">
+    <div><b id="stOpen">0</b><span>open items</span></div>
+    <div><b id="stMax">0</b><span>days the oldest has waited</span></div>
+    <div><b id="stWk">0</b><span>nudges this week</span></div>
+  </div>
+</header>
+<div class="install" id="install" hidden>
+  <span id="installTxt">Install it like an app: tap Share, then “Add to Home Screen”.</span>
+  <button type="button" id="installX">Got it</button>
+</div>
+
+<main class="band wrap grid">
+  <section>
+    <form id="add" class="panel" novalidate>
+      <h2 id="fTitle">New item</h2>
+      <label for="fC">Client</label>
+      <input id="fC" type="text" autocomplete="off" placeholder="e.g. Coral Group">
+      <label for="fD">What you need from your boss</label>
+      <textarea id="fD" rows="3" placeholder="Type it or dictate it with the keyboard mic"></textarea>
+      <label class="check"><input id="fU" type="checkbox"> Urgent</label>
+      <p class="err" id="fErr"></p>
+      <div class="btns">
+        <button class="pri" id="fSave" type="submit">Save</button>
+        <button class="pinkb" id="fNow" type="submit">Save and send now</button>
+        <button id="fCancel" type="button" hidden>Cancel</button>
+      </div>
+    </form>
+    <p class="sample" id="sampleNote">The items below are examples so you can try the app. <button type="button" id="clearS">Delete examples</button></p>
+    <ul class="list" id="list"></ul>
+    <details class="panel"><summary>Resolved (<span id="doneN">0</span>)</summary><ul class="list2" id="done"></ul></details>
+  </section>
+
+  <aside class="side">
+    <section class="panel comp" id="comp" aria-label="Message ready">
+      <h2>Message ready <button type="button" class="x" id="x">Close</button></h2>
+      <p class="small" id="compFor"></p>
+      <textarea id="msg" rows="11" aria-label="Message text"></textarea>
+      <div class="btns">
+        <button type="button" id="variant">Another version</button>
+        <button type="button" id="toAll" hidden>Back to all items</button>
+      </div>
+      <div class="sends">
+        <a class="send" id="sWa" data-ch="wa" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="send" id="sGm" data-ch="gm" target="_blank" rel="noopener">Gmail</a>
+        <a class="send" id="sOl" data-ch="ol" target="_blank" rel="noopener">Outlook</a>
+        <a class="send" id="sMail" data-ch="mail">Mail app</a>
+      </div>
+      <button type="button" id="copy" class="wide">Copy text</button>
+      <p class="small" id="who"></p>
+      <p class="small">It opens with the message already written; you just tap Send. WhatsApp doesn't let any app send on your behalf without that last tap.</p>
+    </section>
+
+    <details class="panel" id="cfgBox"><summary>Settings</summary>
+      <label for="cBoss">Your boss's name</label>
+      <input id="cBoss" type="text" autocomplete="off">
+      <label for="cPhone">Your boss's WhatsApp number</label>
+      <input id="cPhone" type="tel" inputmode="tel" placeholder="52 55 1234 5678">
+      <p class="small">Country code first, no +. Mexico: 52 plus the 10 digits.</p>
+      <label for="cEmail">Your boss's email</label>
+      <input id="cEmail" type="email" autocomplete="off" placeholder="boss@company.com">
+      <label for="cSubj">Email subject</label>
+      <input id="cSubj" type="text">
+      <label for="cSign">Your signature (emails only)</label>
+      <input id="cSign" type="text" placeholder="Your name">
+      <label for="cTone">Tone</label>
+      <select id="cTone"><option value="friendly">Friendly</option><option value="formal">Formal</option></select>
+      <label for="cCh">Main channel</label>
+      <select id="cCh"><option value="wa">WhatsApp</option><option value="gm">Gmail</option><option value="ol">Outlook</option><option value="mail">Mail app</option></select>
+      <label for="cFreq">Remind me to nudge every</label>
+      <select id="cFreq"><option value="4">4 hours</option><option value="24">1 day</option><option value="48">2 days</option><option value="72">3 days</option></select>
+      <label class="check"><input id="cDays" type="checkbox"> Include days waiting in the message</label>
+      <p class="small">Everything is saved only on this phone.</p>
+      <label for="bk">Backup</label>
+      <textarea id="bk" placeholder="Paste a backup here to restore it"></textarea>
+      <div class="btns"><button type="button" id="bkCopy">Copy backup</button><button type="button" id="bkLoad">Restore pasted backup</button></div>
+      <p class="small">Copy a backup now and then (for example, email it to yourself) in case the phone is changed or the app is deleted.</p>
+    </details>
+
+    <details class="panel"><summary>History</summary><ul class="hist" id="hist"></ul></details>
+  </aside>
+</main>
+<div class="scrim" id="scrim"></div>
+<div id="toast" role="status"><span id="tMsg"></span><button type="button" id="tUndo">Undo</button></div>
+
+<script>
+{
+const K='nudge.v1',DAY=864e5,H=36e5,now=()=>Date.now();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CH={wa:'WhatsApp',gm:'Gmail',ol:'Outlook',mail:'Mail',copy:'Copied'};
+const LOC='en-US';
+
+function seed(){const t=now();return{
+  cfg:{boss:'Mark',phone:'',email:'',subj:'Pending client items',sign:'',tone:'friendly',freq:'24',days:false,ch:'wa'},
+  items:[
+    {id:'s1',client:'Coral Group',detail:'Your approval on the revised quote so I can send it before Friday',urgent:true,created:t-4*DAY,count:3,last:t-26*H,done:false,sample:true},
+    {id:'s2',client:'Marina Hotel',detail:'Sign-off on the renewal contract',urgent:false,created:t-6*DAY,count:4,last:t-26*H,done:false,sample:true},
+    {id:'s3',client:'Santa Fe Clinic',detail:'Confirm whether we accept the new delivery dates',urgent:false,created:t-2*DAY,count:1,last:t-26*H,done:false,sample:true}],
+  log:[{t:t-26*H,ch:'wa',n:3,sample:true},{t:t-3*DAY,ch:'wa',n:2,sample:true},{t:t-5*DAY,ch:'gm',n:1,sample:true}],
+  v:0}}
+let S=null;
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!S||!S.cfg||!Array.isArray(S.items))S=seed();
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+
+function ago(ts){const m=Math.round((now()-ts)/6e4);if(m<1)return'just now';if(m<60)return`${m} min ago`;const h=Math.round(m/60);if(h<24)return`${h} h ago`;const d=Math.round(h/24);return d===1?'1 day ago':`${d} days ago`}
+const daysW=ts=>Math.max(0,Math.floor((now()-ts)/DAY));
+const waitTxt=d=>d<=0?'waiting since today':d===1?'waiting 1 day':`waiting ${d} days`;
+const openItems=()=>S.items.filter(i=>!i.done).sort((a,b)=>(b.urgent-a.urgent)||(a.created-b.created));
+const greet=()=>{const h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening'};
+const fill=(s,m)=>s.replace(/\{(\w+)\}/g,(_,k)=>m[k]??'');
+
+const P={
+  friendly:{open:['{g} {b}, sharing my open items again for whenever you have a moment:','Hi {b}, bumping these back to the top so you have them handy:','{b}, {gl}! Re-sending the pending client items so they stay at the top:','Hi {b}, quick reminder of the items still waiting on your reply:'],
+      close:['Thanks!','Thanks so much, let me know if you need anything from me.','As soon as I hear back I\'ll move these forward with the clients. Thanks!','Happy to jump on a quick call if that\'s easier. Thanks!'],
+      one:['{g} {b}, following up on {c}: {d}. Could you take a look when you get a chance?','Hi {b}, still waiting on {c}: {d}. Thanks!','{b}, bumping {c} again: {d}. Thank you!','Hi {b}, did you get a chance to look at {c}? {D}. Thanks!']},
+  formal:{open:['{g} {b}, I am resending the pending client items for your review at your convenience:','Hello {b}, I am following up on the open items below:','{b}, {gl}. Please find below the items still awaiting your input:','Hello {b}, a reminder of the client matters pending your response:'],
+      close:['Thank you, I look forward to your reply.','Many thanks for your help.','Once I have your input I will follow up with the clients. Thank you.','Please let me know if you need any further information. Thank you.'],
+      one:['{g} {b}, I am following up on {c}: {d}. Could you please review it at your convenience?','Hello {b}, I am still awaiting your input on {c}: {d}. Thank you.','{b}, a gentle reminder regarding {c}: {d}. Thank you.','Hello {b}, have you had a chance to review {c}? {D}. Thank you.']}};
+
+function compose(list,v){
+  const c=S.cfg,p=P[c.tone]||P.friendly,g=greet(),m={g,gl:g.toLowerCase(),b:(c.boss||'').trim()};
+  const clean=s=>String(s).trim().replace(/[.\s]+$/,'');
+  const lo=s=>s.length>1&&s[1]===s[1].toLowerCase()?s[0].toLowerCase()+s.slice(1):s;
+  const up=s=>s?s[0].toUpperCase()+s.slice(1):s;
+  const dd=it=>c.days?` (${waitTxt(daysW(it.created))})`:'';
+  let t;
+  if(list.length===1){
+    const it=list[0],d=clean(it.detail);
+    t=fill(p.one[v%p.one.length],{...m,c:it.client,d:lo(d),D:up(d)})+dd(it);
+    if(it.urgent)t='URGENT: '+t;
+  }else{
+    t=fill(p.open[v%p.open.length],m)+'\n\n'+list.map((it,i)=>`${i+1}. ${it.urgent?'URGENT · ':''}${it.client}: ${lo(clean(it.detail))}${dd(it)}`).join('\n')+'\n\n'+p.close[v%p.close.length];
+  }
+  t=t.replace(/ +([,.?!])/g,'$1').replace(/^[,.!\s]+/,'');
+  return up(t);
+}
+
+let cur={ids:null},editId=null;
+const curItems=()=>cur.ids?S.items.filter(i=>cur.ids.includes(i.id)&&!i.done):openItems();
+
+function build(){
+  if(cur.ids&&!curItems().length)cur.ids=null;
+  const L=curItems();
+  $('msg').value=L.length?compose(L,S.v):'';
+  $('compFor').textContent=L.length?(cur.ids?`Only ${L[0].client}`:`${L.length} ${L.length===1?'item':'items'} in one message`)+` · version ${S.v%4+1} of 4`:'No open items.';
+  $('toAll').hidden=!cur.ids;
+  links();
+}
+
+function links(){
+  const c=S.cfg,txt=$('msg').value,e=encodeURIComponent,ph=(c.phone||'').replace(/\D/g,'');
+  const d=new Date().toLocaleDateString(LOC,{month:'short',day:'numeric'});
+  const subj=`${c.subj||'Pending items'} · ${d}`,body=txt+(c.sign?`\n\n${c.sign}`:''),to=(c.email||'').trim();
+  $('sWa').href=`https://wa.me/${ph}?text=${e(txt)}`;
+  $('sGm').href=`https://mail.google.com/mail/?view=cm&fs=1&to=${e(to)}&su=${e(subj)}&body=${e(body)}`;
+  $('sOl').href=`https://outlook.office.com/mail/deeplink/compose?to=${e(to)}&subject=${e(subj)}&body=${e(body)}`;
+  $('sMail').href=`mailto:${to}?subject=${e(subj)}&body=${e(body)}`;
+  const off=!txt.trim();
+  for(const [id,ch] of [['sWa','wa'],['sGm','gm'],['sOl','ol'],['sMail','mail']]){$(id).classList.toggle('pri',c.ch===ch);$(id).classList.toggle('off',off)}
+  $('who').textContent=(ph?`WhatsApp goes to +${ph}.`:'No number saved: WhatsApp will let you pick the chat.')+(to?` Email goes to ${to}.`:'');
+}
+
+function status(){
+  const l=S.log[0],fr=(+S.cfg.freq||24)*H;
+  if(!l)return'No nudges sent yet.';
+  if(now()-l.t>=fr)return`Last nudge <b>${ago(l.t)}</b>.<span class="chip">Time for another</span>`;
+  return`Last nudge <b>${ago(l.t)}</b>. Next suggested: <b>${new Date(l.t+fr).toLocaleString(LOC,{weekday:'short',hour:'numeric',minute:'2-digit'})}</b>.`;
+}
+
+function card(i){
+  const d=daysW(i.created),w=Math.min(100,Math.max(4,d/14*100)),n=i.count||0;
+  return`<li class="card${i.urgent?' urg':''}" data-id="${esc(i.id)}"><div class="r1"><span class="cl">${esc(i.client)}</span>${i.urgent?'<span class="tag">Urgent</span>':''}</div><p class="det">${esc(i.detail)}</p><div class="wait"><i style="width:${w}%"></i></div><p class="meta">${waitTxt(d)} · ${n} ${n===1?'nudge':'nudges'}${i.last?' · last '+ago(i.last):''}</p><div class="acts"><button type="button" data-a="one">Nudge this one</button><button type="button" data-a="done">He replied</button><button type="button" data-a="edit">Edit</button><button type="button" data-a="del">Delete</button></div></li>`;
+}
+
+function render(){
+  const c=S.cfg,O=openItems(),D=S.items.filter(i=>i.done).sort((a,b)=>b.doneAt-a.doneAt);
+  $('bossName').textContent=(c.boss||'').trim()||'your boss';
+  $('status').innerHTML=status();
+  $('cnt').textContent=O.length;$('all').disabled=!O.length;
+  $('stOpen').textContent=O.length;
+  $('stMax').textContent=O.reduce((m,i)=>Math.max(m,daysW(i.created)),0);
+  $('stWk').textContent=S.log.filter(l=>now()-l.t<7*DAY).length;
+  $('list').innerHTML=O.length?O.map(card).join(''):'<li class="empty">No open items. Add one above every time you send your boss something.</li>';
+  $('sampleNote').hidden=!S.items.some(i=>i.sample);
+  $('doneN').textContent=D.length;
+  $('done').innerHTML=D.map(i=>`<li data-id="${esc(i.id)}"><span><b>${esc(i.client)}</b> · ${esc(i.detail)}<br><span class="small">Resolved ${ago(i.doneAt)} · ${i.count||0} nudges</span></span><button type="button" data-a="reopen">Reopen</button></li>`).join('')||'<li class="small">Nothing yet.</li>';
+  $('hist').innerHTML=S.log.slice(0,12).map(l=>`<li><span>${new Date(l.t).toLocaleString(LOC,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span><span>${CH[l.ch]||''} · ${l.n} ${l.n===1?'item':'items'}</span></li>`).join('')||'<li class="small">No nudges yet.</li>';
+}
+
+let tt;
+function toast(m,un){
+  const T=$('toast');$('tMsg').textContent=m;$('tUndo').hidden=!un;
+  $('tUndo').onclick=()=>{if(un)un();T.classList.remove('on')};
+  T.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>T.classList.remove('on'),6500);
+}
+const undo=snap=>()=>{S=JSON.parse(snap);save();render();build()};
+const openSheet=()=>document.body.classList.add('open');
+const closeSheet=()=>document.body.classList.remove('open');
+
+function sent(ch){
+  const L=curItems();if(!L.length)return;
+  const snap=JSON.stringify(S),t=now();
+  L.forEach(i=>{i.count=(i.count||0)+1;i.last=t});
+  S.log.unshift({t,ch,n:L.length});S.log=S.log.slice(0,80);S.v++;
+  save();render();build();closeSheet();
+  toast(ch==='copy'?'Copied. Paste it into your boss\'s chat.':`${ch==='mail'?'Your mail app':CH[ch]} opened with the message. Just tap Send.`,undo(snap));
+}
+
+function resetForm(){editId=null;$('add').reset();$('fSave').textContent='Save';$('fTitle').textContent='New item';$('fCancel').hidden=true;$('fErr').textContent=''}
+
+$('add').addEventListener('submit',e=>{
+  e.preventDefault();
+  const sendNow=e.submitter&&e.submitter.id==='fNow',client=$('fC').value.trim(),detail=$('fD').value.trim();
+  if(!client||!detail){$('fErr').textContent='Add the client and what you need from your boss.';return}
+  const wasEdit=!!editId;let it;
+  if(wasEdit){it=S.items.find(x=>x.id===editId);if(it)Object.assign(it,{client,detail,urgent:$('fU').checked,sample:false})}
+  if(!it){it={id:'i'+now().toString(36)+Math.random().toString(36).slice(2,6),client,detail,urgent:$('fU').checked,created:now(),count:0,last:0,done:false};S.items.push(it)}
+  resetForm();save();render();
+  if(sendNow){cur.ids=[it.id];build();openSheet()}else{build();toast(wasEdit?'Changes saved.':'Saved. It will be in the next nudge.')}
+});
+$('fCancel').onclick=resetForm;
+
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const id=b.closest('[data-id]').dataset.id,it=S.items.find(x=>x.id===id);if(!it)return;
+  const a=b.dataset.a,snap=JSON.stringify(S);
+  if(a==='one'){cur.ids=[id];build();openSheet()}
+  if(a==='done'){it.done=true;it.doneAt=now();save();render();build();toast(`${it.client} moved to resolved.`,undo(snap))}
+  if(a==='del'){S.items=S.items.filter(x=>x!==it);save();render();build();toast('Item deleted.',undo(snap))}
+  if(a==='edit'){editId=id;$('fC').value=it.client;$('fD').value=it.detail;$('fU').checked=!!it.urgent;$('fSave').textContent='Save changes';$('fTitle').textContent='Edit item';$('fCancel').hidden=false;$('add').scrollIntoView({behavior:'smooth',block:'start'});$('fC').focus({preventScroll:true})}
+});
+$('done').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const it=S.items.find(x=>x.id===b.closest('[data-id]').dataset.id);if(!it)return;
+  it.done=false;it.doneAt=0;save();render();build();
+});
+$('clearS').onclick=()=>{const snap=JSON.stringify(S);S.items=S.items.filter(i=>!i.sample);S.log=S.log.filter(l=>!l.sample);save();render();build();toast('Examples deleted.',undo(snap))};
+
+$('all').onclick=()=>{cur.ids=null;build();openSheet()};
+$('toAll').onclick=()=>{cur.ids=null;build()};
+$('x').onclick=closeSheet;$('scrim').onclick=closeSheet;
+$('variant').onclick=()=>{S.v++;save();build()};
+$('msg').addEventListener('input',links);
+
+for(const id of ['sWa','sGm','sOl','sMail']){
+  $(id).addEventListener('click',e=>{
+    if(!$('msg').value.trim()){e.preventDefault();return}
+    const ch=$(id).dataset.ch;setTimeout(()=>sent(ch),300);
+  });
+}
+function copyText(t,ok,area){
+  const manual=()=>{area.focus();area.select();toast('Select the text and copy it manually.')};
+  try{navigator.clipboard.writeText(t).then(ok,manual)}catch(err){manual()}
+}
+$('copy').onclick=()=>{const t=$('msg').value;if(t.trim())copyText(t,()=>sent('copy'),$('msg'))};
+$('bkCopy').onclick=()=>{const t=JSON.stringify(S);$('bk').value=t;copyText(t,()=>toast('Backup copied. Save it somewhere safe, like an email to yourself.'),$('bk'))};
+$('bkLoad').onclick=()=>{
+  try{const d=JSON.parse($('bk').value);if(!d||!d.cfg||!Array.isArray(d.items))throw 0;const snap=JSON.stringify(S);S=d;save();loadCfg();render();build();$('bk').value='';toast('Backup restored.',undo(snap))}
+  catch(err){toast('That doesn\'t look like a valid backup.')}
+};
+
+const F=[['cBoss','boss'],['cPhone','phone'],['cEmail','email'],['cSubj','subj'],['cSign','sign'],['cTone','tone'],['cFreq','freq'],['cCh','ch']];
+function loadCfg(){F.forEach(([id,k])=>{$(id).value=S.cfg[k]??''});$('cDays').checked=!!S.cfg.days}
+F.forEach(([id,k])=>{const el=$(id);el.addEventListener('input',()=>{S.cfg[k]=el.value;save();render();build()})});
+$('cDays').addEventListener('change',()=>{S.cfg.days=$('cDays').checked;save();build()});
+loadCfg();
+if(!S.cfg.phone&&!S.cfg.email)$('cfgBox').open=true;
+
+let framed=true;try{framed=window.self!==window.top}catch(e){}
+const standalone=window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+let seen=false;try{seen=localStorage.getItem('nudge.install')==='1'}catch(e){}
+if(!framed&&!standalone&&!seen){
+  if(/android/i.test(navigator.userAgent))$('installTxt').textContent='Install it like an app: open the Chrome menu (⋮) and tap “Add to Home screen”.';
+  $('install').hidden=false;
+}
+$('installX').onclick=()=>{$('install').hidden=true;try{localStorage.setItem('nudge.install','1')}catch(e){}};
+
+render();build();
+setInterval(render,60000);
+}
+</script>
+</body>
+</html>
