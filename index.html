@@ -51,8 +51,6 @@ button:hover,.send:hover{border-color:var(--ink)}
 .stats div{display:flex;flex-direction:column;gap:4px}
 .stats b{font-size:clamp(28px,4vw,40px);line-height:1;font-weight:700}
 .stats span{color:#f3d3cf;font-size:14px;line-height:1.3}
-.install{background:var(--pinkSoft);color:var(--ink);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px max(5vw,16px);font-size:15px}
-.install button{min-height:40px;background:transparent}
 .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
 h2{font-size:22px;margin:0 0 6px;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -132,10 +130,6 @@ body.open .scrim{display:block;position:fixed;inset:0;background:rgba(58,13,21,.
     <div><b id="stWk">0</b><span>nudges this week</span></div>
   </div>
 </header>
-<div class="install" id="install" hidden>
-  <span id="installTxt">Install it like an app: tap Share, then “Add to Home Screen”.</span>
-  <button type="button" id="installX">Got it</button>
-</div>
 
 <main class="band wrap grid">
   <section>
@@ -478,14 +472,6 @@ $('cDays').addEventListener('change',()=>{S.cfg.days=$('cDays').checked;save();b
 loadCfg();
 if(!S.cfg.phone&&!S.cfg.email)$('cfgBox').open=true;
 
-let framed=true;try{framed=window.self!==window.top}catch(e){}
-const standalone=window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
-let seen=false;try{seen=localStorage.getItem('nudge.install')==='1'}catch(e){}
-if(!framed&&!standalone&&!seen){
-  if(/android/i.test(navigator.userAgent))$('installTxt').textContent='Install it like an app: open the Chrome menu (⋮) and tap “Add to Home screen”.';
-  $('install').hidden=false;
-}
-$('installX').onclick=()=>{$('install').hidden=true;try{localStorage.setItem('nudge.install','1')}catch(e){}};
 
 render();renderTpls();build();
 setInterval(render,60000);
